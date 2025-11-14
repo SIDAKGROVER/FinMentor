@@ -75,7 +75,9 @@ export default function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post(`${BACKEND}/api/ai/chat`, { message: userMsg });
+      // Send last 8 messages as history for context
+      const history = messages.slice(-8);
+      const res = await axios.post(`${BACKEND}/api/ai/chat`, { message: userMsg, history });
       const botText = res.data.reply;
 
       setMessages(m => [...m, { from: "bot", text: botText }]);

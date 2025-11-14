@@ -114,7 +114,7 @@ function cannedReply(message) {
 
 // AI Chat Route (proxy to OpenAI / Gemini)
 app.post('/api/ai/chat', async (req, res) => {
-  const { message } = req.body;
+  const { message, history } = req.body;
   if (!message) return res.status(400).json({ error: 'message required' });
 
   // If API key not set, return canned reply immediately
@@ -123,17 +123,25 @@ app.post('/api/ai/chat', async (req, res) => {
   }
 
   try {
-    // Replace model with one you have access to if needed
-    const modelName = 'gpt-4o-mini'; // <-- change if your API account uses a different model
+    const modelName = 'gpt-4o-mini';
+    // Build conversation history for OpenAI
+    let messagesArr = [
+      { role: 'system', content: 'You are FinMentor Edu, a friendly, practical AI mentor for personal finance. Give unique, actionable, non-repetitive advice. Use examples and avoid repeating yourself.' }
+    ];
+    if (Array.isArray(history) && history.length > 0) {
+      // Use up to last 8 exchanges
+      history.slice(-8).forEach(m => {
+        if (m.from === 'user') messagesArr.push({ role: 'user', content: m.text });
+        if (m.from === 'bot') messagesArr.push({ role: 'assistant', content: m.text });
+      });
+    }
+    messagesArr.push({ role: 'user', content: message });
 
     const payload = {
       model: modelName,
-      messages: [
-        { role: 'system', content: 'You are FinMentor Edu, a friendly AI tutor teaching personal finance to students. Keep answers short and include examples when possible.' },
-        { role: 'user', content: message }
-      ],
+      messages: messagesArr,
       max_tokens: 400,
-      temperature: 0.2
+      temperature: 0.4
     };
 
     const aiResp = await axios.post('https://api.openai.com/v1/chat/completions', payload, {
@@ -154,7 +162,6 @@ app.post('/api/ai/chat', async (req, res) => {
 
   } catch (err) {
     console.error('LLM request failed:', err?.response?.data || err.message);
-    // fallback so demo never breaks
     res.json({ reply: cannedReply(message) });
   }
 });
