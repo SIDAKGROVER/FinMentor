@@ -341,17 +341,6 @@ app.post('/api/audio/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`\n========================================`);
-  console.log(`   FinMentor Backend Server`);
-  console.log(`========================================`);
-  console.log(`✓ Server running on port ${PORT}`);
-  console.log(`✓ API URL: http://localhost:${PORT}`);
-  console.log(`✓ Agora Status: ${APP_ID ? '✓ Configured' : '✗ Missing credentials'}`);
-  console.log(`✓ OpenAI Status: ${OPENAI_KEY ? '✓ Configured' : '✗ Using canned replies'}`);
-  console.log(`========================================\n`);
-});
-
 // Serve frontend static files if present in backend/public
 const staticPath = path.join(__dirname, 'public');
 if (fs.existsSync(staticPath)) {
@@ -365,6 +354,17 @@ if (fs.existsSync(staticPath)) {
     next();
   });
 }
+
+app.listen(PORT, () => {
+  console.log(`\n========================================`);
+  console.log(`   FinMentor Backend Server`);
+  console.log(`========================================`);
+  console.log(`✓ Server running on port ${PORT}`);
+  console.log(`✓ API URL: http://localhost:${PORT}`);
+  console.log(`✓ Agora Status: ${APP_ID ? '✓ Configured' : '✗ Missing credentials'}`);
+  console.log(`✓ OpenAI Status: ${OPENAI_KEY ? '✓ Configured' : '✗ Using canned replies'}`);
+  console.log(`========================================\n`);
+});
 
 // Debug status endpoint (safe for local use) - shows config flags and DB state
 app.get('/api/debug/status', (req, res) => {
