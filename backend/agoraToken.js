@@ -4,29 +4,9 @@
 // - If `agora-access-token` is installed and certificate is provided,
 //   this file will generate short-lived RTC/RTM tokens.
 
-function generateAgoraRtcToken(appId, appCertificate, channelName, uid, opts = {}) {
-  if (!appId) throw new Error('Agora App ID is required');
-
-  // Tokenless mode when no certificate provided
-  if (!appCertificate) return null;
-
-  // Try to use the official token builder if available
-  try {
-    const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
-    const role = (opts.role && opts.role === 'subscriber') ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
-    const expireSeconds = Number(opts.expireSeconds || 3600);
-    const currentTime = Math.floor(Date.now() / 1000);
-    const privilegeExpireTime = currentTime + expireSeconds;
-
-    // buildTokenWithUid supports numeric uid; for string uid you can use buildTokenWithUserAccount
-    const token = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, role, privilegeExpireTime);
-    return token;
-  } catch (err) {
-    // If builder not installed or failed, fall back to tokenless mode but log helpful message
-    console.warn('agora-access-token not available or failed to build token:', err.message || err);
-    return null;
-  }
-}
+// Note: A single generate function is implemented later that will prefer
+// the official `agora-access-token` builder when available and fall back
+// to a local minimal builder only if necessary.
 
 function generateAgoraRtmToken(appId, appCertificate, userAccount, opts = {}) {
   if (!appId) throw new Error('Agora App ID is required');
@@ -160,18 +140,31 @@ class AccessToken {
 function generateAgoraRtcToken(appId, appCertificate, channelName, uid, opts = {}) {
   if (!appId) throw new Error('Agora App ID is required');
   if (!appCertificate) return null;
-
+  // Prefer the official builder if available (recommended). If it's not
+  // installed or fails, fall back to the local minimal AccessToken builder.
   try {
-    const role = opts.role === 'subscriber' ? 1 : 2; // simple mapping; not used in this minimal builder
+    const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
+    const roleConst = (opts.role === 'subscriber') ? RtcRole.SUBSCRIBER : RtcRole.PUBLISHER;
     const expireSeconds = Number(opts.expireSeconds || 3600);
-    const privilegeExpireTs = Math.floor(Date.now() / 1000) + expireSeconds;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const privilegeExpireTime = currentTime + expireSeconds;
 
-    const tokenBuilder = new AccessToken(appId, appCertificate);
-    const token = tokenBuilder.build(channelName, uid, role, privilegeExpireTs);
+    // buildTokenWithUid supports numeric uid; for user account strings use buildTokenWithUserAccount
+    const token = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, roleConst, privilegeExpireTime);
     return token;
   } catch (err) {
-    console.error('generateAgoraRtcToken error:', err);
-    return null;
+    // If the official package isn't present, use the local fallback implementation
+    try {
+      const expireSeconds = Number(opts.expireSeconds || 3600);
+      const privilegeExpireTs = Math.floor(Date.now() / 1000) + expireSeconds;
+
+      const tokenBuilder = new AccessToken(appId, appCertificate);
+      const token = tokenBuilder.build(channelName, uid, 0, privilegeExpireTs);
+      return token;
+    } catch (err2) {
+      console.error('generateAgoraRtcToken error (fallback):', err2);
+      return null;
+    }
   }
 }
 

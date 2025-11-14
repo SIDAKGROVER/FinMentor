@@ -53,6 +53,7 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
 
       if (!appIdToUse) {
         setWarning('No Agora App ID configured on server.');
+        setConnecting(false);
         pushLog('Aborting join: missing appId');
         return;
       }
@@ -78,10 +79,29 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
       setConnecting(false);
       pushLog('Published mic');
     } catch (err) {
+      // Log full error info for easier debugging (Axios provides response data)
       console.error('Agora init error:', err);
+      if (err && err.response) {
+        console.error('Backend response status:', err.response.status);
+        console.error('Backend response data:', err.response.data);
+        pushLog('Agora init error (backend)', { status: err.response.status, data: err.response.data });
+      } else {
+        pushLog('Agora init error', { message: err?.message, code: err?.code || null });
+      }
+
       setWarning('Failed to join Agora channel. Allow microphone and check console for details.');
       setConnecting(false);
-      pushLog('Agora init error:', { message: err?.message, code: err?.code || null });
+      // If developer debug flag set in localStorage, try to fetch token_inspect info
+      try {
+        const debugFlag = localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1';
+        if (debugFlag) {
+          axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`)
+            .then(r => console.log('Token inspect:', r.data))
+            .catch(e => console.warn('Token inspect failed:', e?.message || e));
+        }
+      } catch (e) {
+        console.warn('Debug inspect flow error:', e?.message || e);
+      }
     }
   };
 

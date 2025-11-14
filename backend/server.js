@@ -33,11 +33,33 @@ app.get('/api/agora/token', (req, res) => {
   try {
     const channel = req.query.channel || 'finmentor-channel';
     const uid = req.query.uid ? Number(req.query.uid) : Math.floor(Math.random() * 999999);
-    const token = generateAgoraRtcToken(APP_ID, APP_CERT, channel, uid);
+    // Quick validations to give clearer errors instead of a generic 500
+    if (!APP_ID) {
+      const msg = 'AGORA_APP_ID is not configured on the server';
+      console.error(msg);
+      return res.status(500).json({ error: msg });
+    }
+
+    // Generate token (may return null in tokenless mode)
+    let token;
+    try {
+      token = generateAgoraRtcToken(APP_ID, APP_CERT, channel, uid);
+    } catch (err) {
+      console.error('generateAgoraRtcToken threw:', err && err.stack ? err.stack : err);
+      // If debug flag provided, return error details to help troubleshooting
+      if (req.query.debug === '1') {
+        return res.status(500).json({ error: 'Token generation failed', details: String(err && err.message), stack: err && err.stack });
+      }
+      return res.status(500).json({ error: 'Token generation failed' });
+    }
+
     // Note: token may be null in tokenless mode (if no certificate provided)
     res.json({ token, appId: APP_ID, uid, channel, tokenMode: token ? 'secure' : 'tokenless', chatAppKey: AGORA_CHAT_APPKEY });
   } catch (err) {
     console.error('Token generation error:', err);
+    if (req.query.debug === '1') {
+      return res.status(500).json({ error: 'Token generation failed', details: err && err.message, stack: err && err.stack });
+    }
     res.status(500).json({ error: 'Token generation failed' });
   }
 });
