@@ -12,6 +12,8 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
   const [joined, setJoined] = useState(false);
   const [warning, setWarning] = useState("");
   const [connecting, setConnecting] = useState(false);
+  const [debugEnabled, setDebugEnabled] = useState(() => localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1');
+  const [debugInfo, setDebugInfo] = useState(null);
 
   const pushLog = (msg, obj) => {
     const entry = typeof obj !== "undefined" ? `${msg} ${JSON.stringify(obj)}` : msg;
@@ -91,13 +93,18 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
 
       setWarning('Failed to join Agora channel. Allow microphone and check console for details.');
       setConnecting(false);
-      // If developer debug flag set in localStorage, try to fetch token_inspect info
+      // If developer debug flag set, fetch token_inspect info and show it in UI
       try {
-        const debugFlag = localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1';
+        const debugFlag = debugEnabled || localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1';
         if (debugFlag) {
-          axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`)
-            .then(r => console.log('Token inspect:', r.data))
-            .catch(e => console.warn('Token inspect failed:', e?.message || e));
+          try {
+            const r = await axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`);
+            console.log('Token inspect:', r.data);
+            setDebugInfo(r.data || null);
+          } catch (e) {
+            console.warn('Token inspect failed:', e?.message || e);
+            setDebugInfo({ error: String(e?.message || e) });
+          }
         }
       } catch (e) {
         console.warn('Debug inspect flow error:', e?.message || e);
@@ -115,7 +122,28 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
       <button onClick={startVoice} disabled={connecting} className="voice-btn">
         🎤 {connecting ? 'Connecting...' : (joined ? 'Leave voice chat' : 'Start voice chat now')}
       </button>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+        <label style={{ fontSize: 12, color: '#ddd' }}>
+          <input type="checkbox" checked={debugEnabled} onChange={(e) => { setDebugEnabled(e.target.checked); localStorage.setItem('FINMENTOR_DEBUG_AGORA', e.target.checked ? '1' : '0'); if (!e.target.checked) setDebugInfo(null); }} /> Enable debug
+        </label>
+        <button style={{ fontSize: 12 }} onClick={async () => {
+          // quick token inspect fetch
+          try {
+            const r = await axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`);
+            setDebugInfo(r.data || null);
+            console.log('Token inspect (manual):', r.data);
+          } catch (e) {
+            setDebugInfo({ error: String(e?.message || e) });
+            console.warn('Token inspect manual failed:', e?.message || e);
+          }
+        }}>Fetch token inspect</button>
+      </div>
       {warning && <div style={{ color: '#b44', fontSize: 13 }}>{warning}</div>}
+      {debugInfo && (
+        <pre style={{ background: '#111', color: '#fff', padding: 8, borderRadius: 6, marginTop: 8, width: '100%', overflowX: 'auto', fontSize: 12 }}>
+          {JSON.stringify(debugInfo, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
