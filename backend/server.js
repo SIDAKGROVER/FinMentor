@@ -242,8 +242,8 @@ function cannedReply(message) {
   }
 
   if (variants.length === 0) {
-    variants.push("I can explain budgeting, savings, ROI, compound interest — ask a specific question like 'How do I save ₹2000/month'?\");
-    variants.push("Ask me a specific finance question (budgeting, saving or investing). For example: 'How do I make a monthly budget?'\");
+    variants.push("I can explain budgeting, savings, ROI, compound interest — ask a specific question like 'How do I save ₹2000/month'? ");
+    variants.push("Ask me a specific finance question (budgeting, saving or investing). For example: 'How do I make a monthly budget?'");
     variants.push("I'm FinMentor — I can explain savings, budgets, and compound interest. Try: 'Explain compound interest with an example.'");
   }
 
