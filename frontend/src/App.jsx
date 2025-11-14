@@ -23,6 +23,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home'); // home | voice | chat | contact
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null); // filename under /notes/
+  const [backendStatus, setBackendStatus] = useState(null);
   const agoraSectionRef = React.useRef(null);
   const chatSectionRef = React.useRef(null);
 
@@ -33,6 +34,24 @@ export default function App() {
   React.useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check backend debug status to show helpful banner when Mongo is disconnected
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(`${BACKEND}/api/debug/status`);
+        if (!mounted) return;
+        if (res.ok) {
+          const j = await res.json();
+          setBackendStatus(j);
+        }
+      } catch (e) {
+        // ignore network errors for now
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   function saveUser(u) {
     setUser(u);
@@ -184,6 +203,13 @@ export default function App() {
           </div>
         )}
       </nav>
+
+      {/* Backend status banner: visible when Mongo not connected to explain signup/login behavior */}
+      {backendStatus && backendStatus.mongoReadyStateText !== 'connected' && (
+        <div style={{ background: '#fff3cd', color: '#856404', padding: '8px 12px', textAlign: 'center' }}>
+          Demo mode: the backend database is not connected ({backendStatus.mongoReadyStateText}). Signups are ephemeral and may not persist — to enable persistent accounts, configure MongoDB on the server.
+        </div>
+      )}
 
       <div className="app">
       <div className="sidebar">
