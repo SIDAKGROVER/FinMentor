@@ -12,27 +12,7 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
   const [joined, setJoined] = useState(false);
   const [warning, setWarning] = useState("");
   const [connecting, setConnecting] = useState(false);
-  const [debugEnabled, setDebugEnabled] = useState(() => localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1');
-  const [debugInfo, setDebugInfo] = useState(null);
-
-  // Produce a safe, redacted summary from the token_inspect payload
-  const summarizeInspect = (d) => {
-    if (!d) return null;
-    const appIdHex = String(d.appIdHex || d.appId || '');
-    const mask = (s) => {
-      if (!s) return '';
-      if (s.length <= 12) return s;
-      return `${s.slice(0,6)}...${s.slice(-6)}`;
-    };
-    const items = (d.message && d.message.items) ? d.message.items.map(it => ({ expireTs: it.expireTs || it.expire || null })) : [];
-    return {
-      tokenVersion: d.tokenVersion || d.token || null,
-      appIdHexMasked: mask(appIdHex),
-      tokenBase64Length: d.tokenBase64Length || null,
-      messageCount: d.message && d.message.count || 0,
-      items
-    };
-  };
+  // debug UI removed for production
 
   const pushLog = (msg, obj) => {
     const entry = typeof obj !== "undefined" ? `${msg} ${JSON.stringify(obj)}` : msg;
@@ -112,9 +92,6 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
 
       setWarning('Failed to join Agora channel. Allow microphone and check console for details.');
       setConnecting(false);
-      // Do NOT auto-fetch or display full token_inspect in the UI on error.
-      // For safety, we clear any previous debug info — use the manual button to fetch a redacted summary.
-      setDebugInfo(null);
     }
   };
 
@@ -128,45 +105,9 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
       <button onClick={startVoice} disabled={connecting} className="voice-btn">
         🎤 {connecting ? 'Connecting...' : (joined ? 'Leave voice chat' : 'Start voice chat now')}
       </button>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-        <label style={{ fontSize: 12, color: '#ddd' }}>
-          <input type="checkbox" checked={debugEnabled} onChange={(e) => { setDebugEnabled(e.target.checked); localStorage.setItem('FINMENTOR_DEBUG_AGORA', e.target.checked ? '1' : '0'); if (!e.target.checked) setDebugInfo(null); }} /> Enable debug
-        </label>
-        <button style={{ fontSize: 12 }} onClick={async () => {
-          // Manual fetch: log full inspect to console, show only redacted summary in UI
-          try {
-            const r = await axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`);
-            console.log('Full token inspect (console only):', r.data);
-            setDebugInfo(summarizeInspect(r.data));
-          } catch (e) {
-            setDebugInfo({ error: String(e?.message || e) });
-            console.warn('Token inspect manual failed:', e?.message || e);
-          }
-        }}>Fetch token inspect</button>
-      </div>
+      {/* debug controls removed */}
       {warning && <div style={{ color: '#b44', fontSize: 13 }}>{warning}</div>}
-      {debugInfo && (
-        <div style={{ background: '#111', color: '#fff', padding: 8, borderRadius: 6, marginTop: 8, width: '100%', overflowX: 'auto', fontSize: 12 }}>
-          {debugInfo.error ? (
-            <div style={{ color: '#f88' }}>Inspect error: {String(debugInfo.error)}</div>
-          ) : (
-            <div style={{ fontSize: 13 }}>
-              <div><strong>Token Version:</strong> {debugInfo.tokenVersion}</div>
-              <div><strong>App ID:</strong> {debugInfo.appIdHexMasked}</div>
-              <div><strong>Token length:</strong> {debugInfo.tokenBase64Length}</div>
-              <div><strong>Message count:</strong> {debugInfo.messageCount}</div>
-              {Array.isArray(debugInfo.items) && debugInfo.items.length > 0 && (
-                <div style={{ marginTop: 6 }}>
-                  <strong>Items (expiry timestamps):</strong>
-                  <ul>
-                    {debugInfo.items.map((it, i) => <li key={i}>{it.expireTs || 'n/a'}</li>)}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* debug info removed */}
     </div>
   );
 }
