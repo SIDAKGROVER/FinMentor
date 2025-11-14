@@ -15,6 +15,25 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
   const [debugEnabled, setDebugEnabled] = useState(() => localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1');
   const [debugInfo, setDebugInfo] = useState(null);
 
+  // Produce a safe, redacted summary from the token_inspect payload
+  const summarizeInspect = (d) => {
+    if (!d) return null;
+    const appIdHex = String(d.appIdHex || d.appId || '');
+    const mask = (s) => {
+      if (!s) return '';
+      if (s.length <= 12) return s;
+      return `${s.slice(0,6)}...${s.slice(-6)}`;
+    };
+    const items = (d.message && d.message.items) ? d.message.items.map(it => ({ expireTs: it.expireTs || it.expire || null })) : [];
+    return {
+      tokenVersion: d.tokenVersion || d.token || null,
+      appIdHexMasked: mask(appIdHex),
+      tokenBase64Length: d.tokenBase64Length || null,
+      messageCount: d.message && d.message.count || 0,
+      items
+    };
+  };
+
   const pushLog = (msg, obj) => {
     const entry = typeof obj !== "undefined" ? `${msg} ${JSON.stringify(obj)}` : msg;
     console.log(entry);
@@ -93,22 +112,9 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
 
       setWarning('Failed to join Agora channel. Allow microphone and check console for details.');
       setConnecting(false);
-      // If developer debug flag set, fetch token_inspect info and show it in UI
-      try {
-        const debugFlag = debugEnabled || localStorage.getItem('FINMENTOR_DEBUG_AGORA') === '1';
-        if (debugFlag) {
-          try {
-            const r = await axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`);
-            console.log('Token inspect:', r.data);
-            setDebugInfo(r.data || null);
-          } catch (e) {
-            console.warn('Token inspect failed:', e?.message || e);
-            setDebugInfo({ error: String(e?.message || e) });
-          }
-        }
-      } catch (e) {
-        console.warn('Debug inspect flow error:', e?.message || e);
-      }
+      // Do NOT auto-fetch or display full token_inspect in the UI on error.
+      // For safety, we clear any previous debug info — use the manual button to fetch a redacted summary.
+      setDebugInfo(null);
     }
   };
 
@@ -127,11 +133,11 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
           <input type="checkbox" checked={debugEnabled} onChange={(e) => { setDebugEnabled(e.target.checked); localStorage.setItem('FINMENTOR_DEBUG_AGORA', e.target.checked ? '1' : '0'); if (!e.target.checked) setDebugInfo(null); }} /> Enable debug
         </label>
         <button style={{ fontSize: 12 }} onClick={async () => {
-          // quick token inspect fetch
+          // Manual fetch: log full inspect to console, show only redacted summary in UI
           try {
             const r = await axios.get(`${backendUrl}/api/agora/token_inspect?channel=${channel}&debug=1`);
-            setDebugInfo(r.data || null);
-            console.log('Token inspect (manual):', r.data);
+            console.log('Full token inspect (console only):', r.data);
+            setDebugInfo(summarizeInspect(r.data));
           } catch (e) {
             setDebugInfo({ error: String(e?.message || e) });
             console.warn('Token inspect manual failed:', e?.message || e);
@@ -140,9 +146,26 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
       </div>
       {warning && <div style={{ color: '#b44', fontSize: 13 }}>{warning}</div>}
       {debugInfo && (
-        <pre style={{ background: '#111', color: '#fff', padding: 8, borderRadius: 6, marginTop: 8, width: '100%', overflowX: 'auto', fontSize: 12 }}>
-          {JSON.stringify(debugInfo, null, 2)}
-        </pre>
+        <div style={{ background: '#111', color: '#fff', padding: 8, borderRadius: 6, marginTop: 8, width: '100%', overflowX: 'auto', fontSize: 12 }}>
+          {debugInfo.error ? (
+            <div style={{ color: '#f88' }}>Inspect error: {String(debugInfo.error)}</div>
+          ) : (
+            <div style={{ fontSize: 13 }}>
+              <div><strong>Token Version:</strong> {debugInfo.tokenVersion}</div>
+              <div><strong>App ID:</strong> {debugInfo.appIdHexMasked}</div>
+              <div><strong>Token length:</strong> {debugInfo.tokenBase64Length}</div>
+              <div><strong>Message count:</strong> {debugInfo.messageCount}</div>
+              {Array.isArray(debugInfo.items) && debugInfo.items.length > 0 && (
+                <div style={{ marginTop: 6 }}>
+                  <strong>Items (expiry timestamps):</strong>
+                  <ul>
+                    {debugInfo.items.map((it, i) => <li key={i}>{it.expireTs || 'n/a'}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
