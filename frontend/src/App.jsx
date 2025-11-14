@@ -8,7 +8,7 @@ const BACKEND = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export default function App() {
   const [messages, setMessages] = useState([
-    { from: "bot", text: "Hi! 👋 I'm FinMentor. Ask me anything about finance, budgeting, investments, or savings!" }
+    { from: "bot", text: "Hi — I'm FinMentor. I help you with clear, actionable saving and budgeting tips. Ask me a specific savings question to get started." }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,6 +21,8 @@ export default function App() {
   const [authMode, setAuthMode] = useState(null); // 'login' | 'signup' | null
   const [authLoading, setAuthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('home'); // home | voice | chat | contact
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState(null); // filename under /notes/
   const agoraSectionRef = React.useRef(null);
   const chatSectionRef = React.useRef(null);
 
@@ -51,7 +53,11 @@ export default function App() {
       saveUser(res.data);
       setAuthMode(null);
     } catch (err) {
-      alert(err?.response?.data?.error || 'Signup failed');
+      console.error('Signup failed:', err?.response?.data || err.message);
+      // Show server-provided error details when available
+      const serverErr = err?.response?.data;
+      const message = serverErr?.error || serverErr?.details || 'Signup failed';
+      alert(message);
     } finally { setAuthLoading(false); }
   }
 
@@ -62,7 +68,10 @@ export default function App() {
       saveUser(res.data);
       setAuthMode(null);
     } catch (err) {
-      alert(err?.response?.data?.error || 'Login failed');
+      console.error('Login failed:', err?.response?.data || err.message);
+      const serverErr = err?.response?.data;
+      const message = serverErr?.error || serverErr?.details || 'Login failed';
+      alert(message);
     } finally { setAuthLoading(false); }
   }
 
@@ -132,11 +141,16 @@ export default function App() {
           <div className="brand">💰 FinMentor</div>
         </div>
         <div className="nav-center">
-          <button className={`nav-item ${activeTab==='home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</button>
-          <button className={`nav-item ${activeTab==='voice' ? 'active' : ''}`} onClick={() => gotoSection(agoraSectionRef, 'voice')}>Voice Chat</button>
-          <button className={`nav-item ${activeTab==='chat' ? 'active' : ''}`} onClick={() => gotoSection(chatSectionRef, 'chat')}>Chatbot</button>
-          <button className={`nav-item ${activeTab==='contact' ? 'active' : ''}`} onClick={() => { setActiveTab('contact'); window.alert('Contact us at support@example.com'); }}>Contact Us</button>
+            <button className={`nav-item ${activeTab==='home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</button>
+            <button className={`nav-item ${activeTab==='voice' ? 'active' : ''}`} onClick={() => { gotoSection(agoraSectionRef, 'voice'); setMobileMenuOpen(false); }}>Voice Chat</button>
+            <button className={`nav-item ${activeTab==='chat' ? 'active' : ''}`} onClick={() => { gotoSection(chatSectionRef, 'chat'); setMobileMenuOpen(false); }}>Chatbot</button>
+            <button className={`nav-item ${activeTab==='notes' ? 'active' : ''}`} onClick={() => { setActiveTab('notes'); setMobileMenuOpen(false); }}>Finance Notes</button>
+            <button className={`nav-item ${activeTab==='contact' ? 'active' : ''}`} onClick={() => { setActiveTab('contact'); setMobileMenuOpen(false); window.alert('Contact us at support@example.com'); }}>Contact Us</button>
         </div>
+          {/* Mobile menu toggle */}
+          <button className="nav-hamburger" aria-label="Menu" onClick={() => setMobileMenuOpen(v => !v)}>
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
         <div className="nav-right">
           {!user ? (
             <>
@@ -150,6 +164,25 @@ export default function App() {
             </div>
           )}
         </div>
+        {/* Mobile menu overlay */}
+        {mobileMenuOpen && (
+          <div className="mobile-menu" onClick={() => setMobileMenuOpen(false)}>
+            <div className="mobile-menu-inner" onClick={e => e.stopPropagation()}>
+              <button className={`mobile-item ${activeTab==='home' ? 'active' : ''}`} onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Home</button>
+              <button className={`mobile-item ${activeTab==='voice' ? 'active' : ''}`} onClick={() => { gotoSection(agoraSectionRef, 'voice'); setMobileMenuOpen(false); }}>Voice Chat</button>
+              <button className={`mobile-item ${activeTab==='chat' ? 'active' : ''}`} onClick={() => { gotoSection(chatSectionRef, 'chat'); setMobileMenuOpen(false); }}>Chatbot</button>
+              <button className={`mobile-item ${activeTab==='notes' ? 'active' : ''}`} onClick={() => { setActiveTab('notes'); setMobileMenuOpen(false); }}>Finance Notes</button>
+              {!user ? (
+                <>
+                  <button className="mobile-item" onClick={() => { setAuthMode('login'); setMobileMenuOpen(false); }}>Login</button>
+                  <button className="mobile-item" onClick={() => { setAuthMode('signup'); setMobileMenuOpen(false); }}>Sign up</button>
+                </>
+              ) : (
+                <button className="mobile-item" onClick={() => { saveUser(null); setMobileMenuOpen(false); }}>Logout</button>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       <div className="app">
@@ -172,13 +205,13 @@ export default function App() {
           <AgoraAudio />
         </div>
 
-        <div className="quick-tips">
+            <div className="quick-tips">
           <h4>💡 Quick Tips</h4>
           <ul>
             <li onClick={() => onQuickTip('How do I make a budget?')}>Ask about budgeting</li>
             <li onClick={() => onQuickTip('How do I start investing?')}>Learn about investments</li>
             <li onClick={() => onQuickTip('Explain compound interest with an example')}>Understand compound interest</li>
-            <li onClick={() => onQuickTip('How can I save ₹2000 per month?')}>Get savings strategies</li>
+                <li onClick={() => onQuickTip('How can I save ₹2000 per month?')}>Savings strategies</li>
           </ul>
         </div>
       </div>
@@ -186,6 +219,33 @@ export default function App() {
       {/* top-right user box removed — user details shown in top nav */}
 
       <div className="chat-container" ref={chatSectionRef}>
+        {activeTab === 'notes' && (
+          <div className="notes-container">
+            <h2>Finance Notes — Basics</h2>
+            <p>Topic-wise notes. Click a title to open the note in an overlay.</p>
+            <ul className="notes-list">
+              <li><button className="note-link" onClick={() => setSelectedNote('budgeting.html')}>How to Build a Simple Budget</button></li>
+              <li><button className="note-link" onClick={() => setSelectedNote('emergency-fund.html')}>Saving Strategies & Emergency Fund</button></li>
+              <li><button className="note-link" onClick={() => setSelectedNote('compound_interest.html')}>Compound Interest Explained</button></li>
+              <li><button className="note-link" onClick={() => setSelectedNote('investing-basics.html')}>Investing Basics for Beginners</button></li>
+              <li><button className="note-link" onClick={() => setSelectedNote('debt-repayment.html')}>Debt Management & Credit Basics</button></li>
+              <li><button className="note-link" onClick={() => setSelectedNote('taxes-basics.html')}>Taxes Basics & Recordkeeping</button></li>
+            </ul>
+            <p style={{marginTop:12}}>Notes open in an overlay — you can download them from the overlay using your browser's Save/Print controls.</p>
+          </div>
+        )}
+
+        {selectedNote && (
+          <div className="notes-modal" onClick={() => setSelectedNote(null)}>
+            <div className="notes-modal-inner" onClick={(e) => e.stopPropagation()}>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
+                <strong style={{fontSize:16}}>Finance Note</strong>
+                <button onClick={() => setSelectedNote(null)} style={{background:'transparent',border:'none',fontSize:20,cursor:'pointer'}}>✕</button>
+              </div>
+              <iframe title="note" className="notes-iframe" src={`/notes/${selectedNote}`} />
+            </div>
+          </div>
+        )}
         <div className="messages">
           {messages.map((m, i) => (
             <div key={i} className={`message ${m.from}`}>

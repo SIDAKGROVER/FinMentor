@@ -101,10 +101,21 @@ class AccessToken {
 
   build(channelName, uidOrAccount, role, privilegeExpireTs) {
     // uidOrAccount: number or string
-    // App ID is a 32-character hex string; use as UTF-8 string directly (not hex-decoded)
-    const appIdBuf = Buffer.from(this.appId, 'utf8');
+    // App ID is a 32-character hex string; decode it to raw bytes
+    const appIdHex = String(this.appId || '').replace(/-/g, '');
+    const appIdBuf = Buffer.from(appIdHex, 'hex');
     const channelBuf = Buffer.from(channelName || '', 'utf8');
-    const uidBuf = Buffer.from(String(uidOrAccount), 'utf8');
+
+    // uidOrAccount: if numeric (rtc uid), encode as 4-byte BE integer for signature input
+    // if string (user account), encode as UTF-8 bytes
+    let uidBuf;
+    const uidStr = String(uidOrAccount || '0');
+    if (/^\d+$/.test(uidStr)) {
+      uidBuf = Buffer.alloc(4);
+      uidBuf.writeUInt32BE(Number(uidStr));
+    } else {
+      uidBuf = Buffer.from(uidStr, 'utf8');
+    }
 
     const salt = crypto.randomBytes(4).readUInt32BE(0);
     const ts = Math.floor(Date.now() / 1000);

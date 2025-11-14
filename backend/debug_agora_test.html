@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Agora Debug Join Test</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.8.0.js"></script>
+    <style>body{font-family:Inter,Segoe UI,Arial; padding:20px;} pre{background:#111;color:#fff;padding:12px;border-radius:6px}</style>
+  </head>
+  <body>
+    <h2>Agora Debug Join Test</h2>
+    <p>This page fetches a token from <code>/api/agora/token</code> and attempts to join the channel. Open DevTools Console to see detailed logs and errors.</p>
+    <label>Backend URL: <input id="backend" value="https://finmentor.onrender.com" style="width:420px"/></label>
+    <button id="run">Fetch token & Join</button>
+    <pre id="log">Logs will appear here. Also check Console (F12).</pre>
+
+    <script>
+      const logEl = document.getElementById('log');
+      function log(...args){ console.log(...args); logEl.textContent += '\n' + args.map(a=> (typeof a==='object'? JSON.stringify(a): String(a))).join(' '); }
+
+      document.getElementById('run').addEventListener('click', async ()=>{
+        try{
+          log('Starting debug join...');
+          const backend = document.getElementById('backend').value.replace(/\/$/, '');
+          const channel = 'finmentor-channel';
+          log('Fetching token from', backend + '/api/agora/token?channel=' + channel);
+          const r = await fetch(backend + '/api/agora/token?channel=' + encodeURIComponent(channel));
+          const j = await r.json();
+          log('Backend response', j);
+
+          const appId = j.appId;
+          const token = j.token || null;
+          const uid = j.uid || null;
+
+          if(!appId){ log('No appId returned by backend'); return; }
+
+          const client = AgoraRTC.createClient({mode:'rtc', codec:'vp8'});
+          client.on('user-published', async (user, mediaType)=>{ log('user-published', user.uid, mediaType); await client.subscribe(user, mediaType); if(mediaType==='audio') user.audioTrack && user.audioTrack.play(); });
+
+          log('Calling client.join', {appId, channel, token, uid});
+          try{
+            await client.join(appId, channel, token, uid);
+            log('Join succeeded');
+            const mic = await AgoraRTC.createMicrophoneAudioTrack();
+            await client.publish([mic]);
+            log('Published mic');
+          }catch(e){ log('Join error', e); }
+
+        }catch(err){ log('Debug error', err); }
+      });
+    </script>
+  </body>
+</html>

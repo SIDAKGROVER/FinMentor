@@ -4,10 +4,19 @@
   box-sizing: border-box;
 }
 
+:root{
+  --bg-start: #eef2ff;
+  --bg-end: #f6f0ff;
+  --accent-1: #667eea;
+  --accent-2: #764ba2;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #333;
+  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  color: #111827;
 }
 
 /* Reserve space for fixed top nav */
@@ -22,8 +31,9 @@ body { padding-top: 64px; }
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
-  background: rgba(255,255,255,0.95);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(250,250,255,0.7));
+  box-shadow: 0 8px 30px rgba(16,24,40,0.06);
+  backdrop-filter: blur(6px);
   z-index: 1200;
 }
 .top-nav .brand { font-weight: 700; color: #667eea }
@@ -34,9 +44,14 @@ body { padding-top: 64px; }
 .nav-auth { padding: 8px 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-weight:700 }
 .nav-user { display:flex; gap:8px; align-items:center }
 
+.nav-hamburger { display:none; background:transparent; border:none; font-size:20px; padding:8px; margin-left:8px; cursor:pointer }
+
 @media (max-width: 768px) {
   .top-nav { padding: 0 12px }
-  .nav-center { display: none }
+  /* Keep nav center visible on small screens but allow horizontal scrolling */
+  .nav-center { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-item { padding: 8px 10px; font-size: 13px }
+  .top-nav .brand { font-size: 16px }
 }
 
 #root {
@@ -46,19 +61,20 @@ body { padding-top: 64px; }
 .app {
   display: flex;
   height: 100vh;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
 }
 
 /* Sidebar */
 .sidebar {
   width: 280px;
-  background: white;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  box-shadow: 2px 8px 30px rgba(99,102,241,0.06);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   padding: 20px;
   position: relative;
+  border-radius: 12px 12px 0 0;
 }
 
 .logo {
@@ -81,11 +97,12 @@ body { padding-top: 64px; }
 
 /* Agora Audio Component */
 .agora-audio {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 15px;
+  background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
+  padding: 16px;
   border-radius: 12px;
   color: white;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 20px rgba(102,126,234,0.12);
 }
 
 .agora-audio h3 {
@@ -132,12 +149,12 @@ body { padding-top: 64px; }
   font-size: 13px;
   padding: 10px;
   margin-bottom: 8px;
-  background: #f9f9f9;
-  border-left: 3px solid #667eea;
-  border-radius: 4px;
-  color: #555;
+  background: linear-gradient(90deg, #ffffff, #fbfbff);
+  border-left: 4px solid var(--accent-1);
+  border-radius: 8px;
+  color: #333;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.18s ease, background 0.18s ease;
 }
 
 .quick-tips li:hover {
@@ -185,7 +202,7 @@ body { padding-top: 64px; }
 }
 
 .message.user .bubble {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
   color: white;
   border-radius: 18px 18px 4px 18px;
 }
@@ -206,8 +223,9 @@ body { padding-top: 64px; }
   border-radius: 18px;
   max-width: 60%;
   word-wrap: break-word;
-  line-height: 1.5;
-  font-size: 14px;
+  line-height: 1.45;
+  font-size: 15px;
+  box-shadow: 0 6px 18px rgba(17,24,39,0.04);
 }
 
 .bubble.loading {
@@ -221,8 +239,8 @@ body { padding-top: 64px; }
   display: flex;
   gap: 10px;
   padding: 20px;
-  border-top: 1px solid #e5e7eb;
-  background: #fafafa;
+  border-top: 1px solid rgba(15,23,42,0.04);
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(250,250,255,0.6));
 }
 
 textarea {
@@ -250,15 +268,15 @@ textarea:disabled {
 }
 
 button {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-2) 100%);
   color: white;
   border: none;
-  border-radius: 24px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  min-width: 100px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  min-width: 86px;
 }
 
 button:hover:not(:disabled) {
@@ -294,24 +312,64 @@ button:disabled {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .app {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .bubble {
-    max-width: 85%;
-  }
-
-  .quick-tips {
-    display: none;
-  }
+@media (max-width: 1024px) {
+  /* Slight adjustments for tablet widths */
+  .sidebar { width: 240px }
+  .bubble { max-width: 70% }
 }
+
+@media (max-width: 768px) {
+  .app { flex-direction: column; }
+
+  /* Sidebar becomes top section */
+  .sidebar { width: 100%; border-bottom: 1px solid #e5e7eb; display: flex; padding: 16px; gap: 12px }
+
+  /* Reduce paddings for messages on small screens */
+  .messages { padding: 16px 12px }
+
+  /* Wider bubbles on mobile but small margins */
+  .bubble { max-width: 90%; font-size: 15px }
+
+  /* Keep quick tips accessible but compact */
+  .quick-tips { display: block }
+  .quick-tips h4 { font-size: 13px }
+  .quick-tips li { padding: 8px; font-size: 13px }
+
+  /* Input area stacks vertically on narrow screens */
+  .input-area { flex-direction: column; align-items: stretch; padding: 12px }
+  textarea { min-height: 60px; max-height: 160px }
+  button { width: 100%; min-width: auto }
+  .nav-hamburger { display: block }
+}
+
+@media (max-width: 420px) {
+  /* Extra small phones — stack input controls and enlarge touch targets */
+  .nav-item { padding: 8px; font-size: 13px }
+  .logo h1 { font-size: 20px }
+  .messages { padding: 12px }
+  .bubble { max-width: 95%; font-size: 15px }
+
+  .input-area { padding: 10px }
+  .input-area textarea { width: 100%; margin-bottom: 8px }
+  .input-area button { width: 100% }
+}
+
+/* Mobile menu overlay */
+.mobile-menu {
+  position: fixed; left: 0; right: 0; top: 64px; bottom: 0;
+  background: rgba(8,10,20,0.35);
+  display: flex; align-items: flex-start; justify-content: center; z-index: 1300;
+}
+.mobile-menu-inner {
+  margin-top: 12px; width: 94%; max-width: 420px; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 20px 40px rgba(2,6,23,0.16);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.mobile-item { background: transparent; border: none; text-align: left; padding: 12px 10px; font-size: 16px; border-radius: 8px; cursor: pointer }
+.mobile-item.active { background: rgba(102,126,234,0.08); font-weight: 700 }
+
+/* Voice button style */
+.voice-btn { background: rgba(255,255,255,0.12); color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; box-shadow: 0 6px 16px rgba(102,126,234,0.12); cursor: pointer }
+.voice-btn:active { transform: translateY(1px) }
 
 /* Auth modal styles */
 .auth-modal {
@@ -331,3 +389,10 @@ button:disabled {
 .muted { color: #666; font-size: 12px }
 
 /* top-right-user styles removed (user shown in top nav) */
+
+/* Notes modal styles */
+.notes-modal { position: fixed; left:0; right:0; top:64px; bottom:0; background: rgba(8,10,20,0.36); display:flex; align-items:flex-start; justify-content:center; z-index:1400 }
+.notes-modal-inner { margin-top:18px; width:94%; max-width:900px; height:80%; background: white; border-radius:10px; padding:12px 14px; box-shadow: 0 30px 60px rgba(2,6,23,0.2); display:flex; flex-direction:column }
+.notes-iframe { border: none; flex:1; width:100%; border-radius:6px }
+.note-link { background: transparent; border: none; color: var(--accent-1); font-weight:600; cursor:pointer; padding:8px 6px; text-align:left }
+.note-link:hover { text-decoration:underline }
