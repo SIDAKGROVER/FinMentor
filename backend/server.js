@@ -12,6 +12,7 @@ const bcrypt = require('bcryptjs');
 const app = express();
 app.use(cors());
 app.use(express.json());
+const path = require('path');
 
 const PORT = process.env.PORT || 5000;
 const APP_ID = process.env.AGORA_APP_ID;
@@ -351,6 +352,20 @@ app.listen(PORT, () => {
   console.log(`========================================\n`);
 });
 
+// Serve frontend static files if present in backend/public
+const staticPath = path.join(__dirname, 'public');
+if (fs.existsSync(staticPath)) {
+  app.use(express.static(staticPath));
+
+  // Serve index.html for any non-API route (SPA fallback)
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    const indexFile = path.join(staticPath, 'index.html');
+    if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+    next();
+  });
+}
+
 // Debug status endpoint (safe for local use) - shows config flags and DB state
 app.get('/api/debug/status', (req, res) => {
   try {
@@ -365,5 +380,20 @@ app.get('/api/debug/status', (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'debug failed', details: err.message });
+  }
+});
+
+// Debug: list files in backend/public to verify static assets deployed
+app.get('/api/debug/public_files', (req, res) => {
+  try {
+    const allow = (process.env.DEBUG_AGORA === '1') || req.query.debug === '1';
+    if (!allow) return res.status(403).json({ error: 'debug disabled' });
+    const staticPath = path.join(__dirname, 'public');
+    const exists = fs.existsSync(staticPath);
+    const list = exists ? fs.readdirSync(staticPath) : [];
+    return res.json({ exists, files: list });
+  } catch (err) {
+    console.error('public_files debug error:', err);
+    res.status(500).json({ error: 'failed', details: err.message });
   }
 });
