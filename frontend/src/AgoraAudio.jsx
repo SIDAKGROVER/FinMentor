@@ -90,7 +90,13 @@ export default function AgoraAudio({ channel = "finmentor-channel", overrideAppI
         pushLog('Agora init error', { message: err?.message, code: err?.code || null });
       }
 
-      setWarning('Failed to join Agora channel. Allow microphone and check console for details.');
+      // Show a shorter, user-friendly message. If backend/error mentions a limit, show that specifically.
+      const errMessage = (err && (err?.response?.data?.error || err?.message || '')) + '';
+      if (/limit|max participants|quota|exceed/i.test(errMessage)) {
+        setWarning('Limit reached with Agora');
+      } else {
+        setWarning('Joining Error');
+      }
       setConnecting(false);
     }
   };
