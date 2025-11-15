@@ -13,6 +13,7 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = React.useRef(null);
+  const didMountRef = React.useRef(false);
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('fm_user')) || null;
@@ -32,8 +33,18 @@ export default function App() {
   };
 
   React.useEffect(() => {
+    // Avoid auto-scrolling on initial mount (so the user sees the top/home)
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     scrollToBottom();
   }, [messages]);
+
+  // Ensure the page opens at the top (hero) on first load
+  React.useEffect(() => {
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch (e) { /* ignore */ }
+  }, []);
 
   // Check backend debug status to show helpful banner when Mongo is disconnected
   React.useEffect(() => {
@@ -245,6 +256,16 @@ export default function App() {
       {/* top-right user box removed — user details shown in top nav */}
 
       <div className="chat-container" ref={chatSectionRef}>
+        {activeTab === 'home' && (
+          <div className="home-hero">
+            <h2 className="hero-title">ChatBot & Voice Chat</h2>
+            <p className="hero-sub">Get quick personal finance help — type to chat or join a live voice session.</p>
+            <div className="hero-actions">
+              <button className="hero-btn" onClick={() => { setActiveTab('chat'); setMobileMenuOpen(false); setTimeout(()=> gotoSection(chatSectionRef, 'chat'), 100); }}>Chatbot</button>
+              <button className="hero-btn ghost" onClick={() => { setActiveTab('voice'); setMobileMenuOpen(false); setTimeout(()=> gotoSection(agoraSectionRef, 'voice'), 100); }}>Voice Chat</button>
+            </div>
+          </div>
+        )}
         {activeTab === 'notes' && (
           <div className="notes-container">
             <h2>Finance Notes — Basics</h2>
@@ -301,6 +322,23 @@ export default function App() {
           </button>
         </div>
       </div>
+    
+    <footer className="site-footer">
+      <div className="footer-inner">
+        <div className="footer-left">© Coding Ninja — All rights reserved</div>
+        <div className="footer-right">
+          <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram" className="social-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.2"/><circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.2"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+          </a>
+          <a href="https://twitter.com" target="_blank" rel="noreferrer" aria-label="Twitter" className="social-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 5.8c-.6.3-1.2.5-1.9.6.7-.4 1.2-1 1.4-1.8-.7.4-1.5.6-2.3.8C18.6 4.6 17.8 4 16.9 4c-1.5 0-2.6 1.2-2.6 2.7 0 .2 0 .4.1.6C11 7.1 8.1 5.8 6 3.8c-.3.5-.5 1-.5 1.7 0 1.1.6 2 1.6 2.6-.5 0-1-.2-1.5-.4 0 1.6 1.1 3 2.6 3.3-.3.1-.6.1-.9.1-.2 0-.4 0-.6-.1.4 1.2 1.6 2.1 3 2.1C9 15 7.8 15.6 6.5 15.6c-.4 0-.8 0-1.2-.1C5.4 16.6 7 17.4 8.8 17.4c5.3 0 8.2-4.4 8.2-8.2v-.4c.6-.4 1.2-1 1.7-1.6-.5.2-1 .3-1.6.4z" stroke="currentColor" strokeWidth="0.6" fill="currentColor"/></svg>
+          </a>
+          <a href="https://facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook" className="social-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 2h-3a4 4 0 00-4 4v3H8v4h3v8h4v-8h3l1-4h-4V6a1 1 0 011-1h3V2z" fill="currentColor"/></svg>
+          </a>
+        </div>
+      </div>
+    </footer>
       {/* Auth modal / inline form */}
       {authMode && (
         <div className="auth-modal">
